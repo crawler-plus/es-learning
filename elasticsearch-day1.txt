@@ -1,0 +1,178 @@
+-- 新建名称为blog的索引,索引名称要小写开头
+PUT blog
+
+-- 创建blogs索引，分片数为3，副本数为0
+PUT blogs
+{
+  "settings": {
+    "number_of_shards": 3,
+    "number_of_replicas": 0
+  }
+}
+
+-- 将索引的副本数改成2
+PUT blogs/_settings
+{
+  "number_of_replicas": 2
+}
+
+-- 禁止对索引进行写操作
+PUT blog/_settings
+{
+  "blocks.write": true
+}
+
+-- 恢复对索引进行写操作
+PUT blog/_settings
+{
+  "blocks.write": false
+}
+
+-- 查看多个索引的配置信息
+GET blog,blogs/_settings
+
+-- 删除索引
+DELETE blog
+
+-- 关闭索引
+POST blogs/_close
+
+-- 打开索引
+POST blogs/_open
+
+-- 关闭所有索引
+post _all/_close
+
+-- 打开依po开头的索引
+post bl*/_open
+
+-- 将blogs索引内容复制到blogs_new索引中
+POST _reindex
+{
+  "source": {
+    "index": "blogs"
+  },
+  "dest": {
+    "index": "blogs_new"
+  }
+}
+
+-- 给blogs索引别名为my_blogs
+POST /_aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "blogs",
+        "alias": "my_blogs"
+      }
+    }
+  ]
+}
+
+-- 移除blogs索引的别名
+POST /_aliases
+{
+  "actions": [
+    {
+      "remove": {
+        "index": "blogs",
+        "alias": "my_blogs"
+      }
+    }
+  ]
+}
+
+-- 将blogs和blogs_new的索引都别名为my_blogs
+POST /_aliases
+{
+  "actions": [
+    {
+      "add": {
+        "indices":["blogs", "blogs_new"],
+        "alias": "my_blogs"
+      }
+    }
+  ]
+}
+
+-- 同时移除blogs和blogs_new索引的别名
+POST /_aliases
+{
+  "actions": [
+    {
+      "remove": {
+        "indices":["blogs", "blogs_new"],
+        "alias": "my_blogs"
+      }
+    }
+  ]
+}
+
+-- 查看blogs索引的别名
+GET blogs/_aliases
+
+-- 查看所有可用别名
+GET _aliases
+
+-- 创建文档，手动指定文档id为1
+PUT blogs/article/1
+{
+  "id": 1,
+  "title": "Git 简介",
+  "posttime": "2017-05-01",
+  "content": "Git是一款免费、开源的分布式版"
+}
+
+-- 创建文档不手动指定文档id，会被创建默认的id，一定要用post方法
+POST blogs/article
+{
+  "id": 2,
+  "title": "Git 简介",
+  "posttime": "2017-05-01",
+  "content": "Git是一款免费、开源的分布式版"
+}
+
+-- 获取blogs索引下article类型下某一个文档
+GET blogs/article/1
+
+-- 获取blogs索引下article类型下所有文档
+GET blogs/article/_search
+
+-- 批量获取blogs索引下类型为article的id为1和2的文档
+GET blogs/_mget
+{
+  "docs": [{
+    "_type": "article",
+    "_id": "1"
+  },
+  {
+    "_type": "article",
+    "_id": "2"
+  }
+  ]
+}
+
+-- 删除blogs索引中article类型下编号为1的文档
+DELETE blogs/article/1
+
+-- 删除blogs索引下所有title包含java的文档
+POST blogs/_delete_by_query
+{
+  "query": {
+    "term": {
+      "title": "java"
+    }
+  }
+}
+
+-- 删除blogs索引下article类型下所有文档
+POST blogs/article/_delete_by_query
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+-- 查看一个索引下的mapping信息
+GET blogs/_mappings
