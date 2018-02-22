@@ -2,5 +2,7 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/elasticsearch-day1.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/elasticsearch-day2.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/elasticsearch-day3.txt" charset="GBK" />
   </component>
 </project>

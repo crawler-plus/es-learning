@@ -1,0 +1,256 @@
+聚合查询
+-- 查询最贵的一本书的价格
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "max_price": {
+      "max": {
+        "field": "price"
+      }
+    }
+  }
+}
+
+-- 查询最早出版的书的时间
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "min_year": {
+      "min": {
+        "field": "year"
+      }
+    }
+  }
+}
+
+-- 查询书的平均价格
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "avg_price": {
+      "avg": {
+        "field": "price"
+      }
+    }
+  }
+}
+
+-- 查询书的总价
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "sum_price": {
+      "sum": {
+        "field": "price"
+      }
+    }
+  }
+}
+
+-- cardinality类似于sql中的distinct，统计某一个项目中的不重复的值的数量
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "all_lan": {
+      "cardinality": {
+        "field": "language"
+      }
+    }
+  }
+}
+
+-- stats统计某一个项目中的基本统计，包含总数，最大值，最小值，平均值，总和
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "grades_stats": {
+      "stats": {
+        "field": "price"
+      }
+    }
+  }
+}
+
+-- extended_stats统计某一个项目中的基本统计，包含总数，最大值，最小值，平均值，总和，平方和，方差，标准差，平均值加/减两个
+标准差的区间
+GET books/_search
+{
+  "size": 0,
+  "aggs": {
+    "grades_stats": {
+      "extended_stats": {
+        "field": "price"
+      }
+    }
+  }
+}
+
+-- value_count按照字段统计文档的数量，如下查询统计books索引中包含author字段的文档数量
+POST books/_search
+{
+  "size": 0,
+  "aggs": {
+    "doc_count": {
+      "value_count": {
+        "field": "author"
+      }
+    }
+  }
+}
+
+-- 对language进行分类统计，相当于sql中的group by语句
+POST books/_search?size=0
+{
+  "aggs": {
+    "per_count": {
+      "terms": {
+        "field": "language"
+      }
+    }
+  }
+}
+
+-- 在对language进行分类统计的基础上，再次统计每组中的图书的平均价格
+POST books/_search?size=0
+{
+  "aggs": {
+    "per_count": {
+      "terms": {
+        "field": "language"
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+
+-- 关键词含有java的文档的平均价格
+POST books/_search?size=0
+{
+  "aggs": {
+    "java_avg_price": {
+      "filter": {
+        "term": {
+          "title": "java"
+        }
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+
+-- 对标题中含有java和python的文档分成两组，计算两组的价格平均值
+POST books/_search?size=0
+{
+  "aggs": {
+    "per_avg_price": {
+      "filters": {
+        "filters": [
+          {"match": {
+            "title": "java"
+          }},
+          {"match": {
+            "title": "python"
+          }}
+        ]
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+
+-- range查询，查询三个阶段，0-50，,5-80,80以上的价格的图书的分布情况
+POST books/_search?size=0
+{
+  "aggs": {
+    "price_ranges": {
+      "range": {
+        "field": "price",
+        "ranges": [
+          {
+            "to": 50
+          },
+          {
+            "from": 50, "to": 80
+          },
+          {
+            "from": 80
+          }
+        ]
+      }
+    }
+  }
+}
+
+-- range根据发布日期分三个阶段的图书分布情况
+POST books/_search?size=0
+{
+  "aggs": {
+    "range": {
+      "date_range": {
+        "field": "year",
+        "ranges": [
+          {
+            "to": "2013-09-01"
+          },
+          {
+            "from": "2013-09-01",
+            "to": "2014-09-01"
+          },
+          {
+            "from": "2014-09-01"
+          }
+        ],
+        "format": "yyyy-MM-dd"
+      }
+    }
+  }
+}
+
+-- 根据日期以年为单位统计的直方图
+POST books/_search?size=0
+{
+  "aggs": {
+    "books_over_time": {
+      "date_histogram": {
+        "field": "year",
+        "interval": "year"
+      }
+    }
+  }
+}
+
+-- 空值聚合，把文档中所有缺失字段（包含值为null）的文档聚合起来
+POST books/_search?size=0
+{
+  "aggs": {
+    "book_without_a_price": {
+      "missing": {
+        "field": "price1"
+      }
+    }
+  }
+}
