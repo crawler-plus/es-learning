@@ -1,0 +1,479 @@
+-- 准备索引
+PUT books
+{
+  "settings": {
+    "number_of_replicas": 1
+    , "number_of_shards": 3
+  },
+  "mappings": {
+    "IT": {
+      "properties": {
+        "id": {
+          "type": "long"
+        },
+        "title": {
+          "type": "text",
+          "analyzer": "ik_max_word"
+        },
+        "language": {
+          "type": "keyword"
+        },
+        "author": {
+          "type": "keyword"
+        },
+        "price": {
+          "type": "double"
+        },
+        "year": {
+          "type": "date",
+          "format": "yyy-MM-dd"
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "ik_max_word"
+        }
+      }
+    }
+  }
+}
+
+-- 准备数据
+PUT books/IT/1
+{
+  "id": 1,
+  "title": "Java编程思想",
+  "language": "java",
+  "author": "BruceEckel",
+  "price":70.20,
+  "year":"2007-10-01",
+  "description":"Java学习必读经典，殿堂级著作！赢得了全球程序员的广泛赞誉。"
+}
+
+PUT books/IT/2
+{
+  "id": 2,
+  "title": "Java程序性能优化",
+  "language": "java",
+  "author": "葛一鸣",
+  "price":46.50,
+  "year":"2012-08-01",
+  "description":"让你的Java程序更快、更稳定。深入剖析软件设计层面、代码层面、JVM虚拟机层面的优化方法"
+}
+
+PUT books/IT/3
+{
+  "id": 3,
+  "title": "Python科学计算",
+  "language": "python",
+  "author": "张若愚",
+  "price":81.40,
+  "year":"2016-05-01",
+  "description":"零基础学python，光盘中作者独家整合开发winPython运行环境，涵盖了Python各个扩展库"
+}
+
+PUT books/IT/4
+{
+  "id": 4,
+  "title": "Python基础教程",
+  "language": "python",
+  "author": "Helant",
+  "price":54.50,
+  "year":"2014-03-01",
+  "description":"经典的Python入门教程，层次鲜明，结构严谨，内容翔实"
+}
+
+PUT books/IT/5
+{
+  "id": 5,
+  "title": "JavaScript高级程序设计",
+  "language": "javascript",
+  "author": "Nicholas C. Zakas",
+  "price":66.40,
+  "year":"2012-10-01",
+  "description":"Javascript技术经典名著"
+}
+
+-- 查询全部文档
+GET books/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+等价于
+GET books/_search
+
+-- 查询某一个关键词的文档
+GET books/_search
+{
+  "query": {
+    "term": {
+      "title": "思想"
+    }
+  }
+}
+
+-- 带有分页查询的语句，从第一页开始查，查询100条数据
+GET books/_search
+{
+  "from": 0,
+  "size": 100,
+  "query": {
+    "term": {
+      "title": "思想"
+    }
+  }
+}
+-- 查询标题包含java的文档，只查询title和author字段
+GET books/_search
+{
+  "_source": ["title", "author"],
+  "version": true,
+  "query": {
+    "term": {
+      "title": "java"
+    }
+  }
+}
+-- 查询最低评分不低于0.7的标题包含java的文档
+GET books/_search
+{
+  "min_score": 0.7,
+  "query": {
+    "term": {
+      "title": "java"
+    }
+  }
+}
+
+-- 高亮查询关键字
+GET books/_search
+{
+  "query": {
+    "term": {
+      "title": "编程"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "title": {}
+    }
+  }
+}
+
+-- 查询标题包含java 编程 这几个关键词所有的关键词的文档
+GET books/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "java编程",
+        "operator": "and"
+      }
+    }
+  }
+}
+
+-- 查询标题包含java 编程 这几个关键词任何一个关键词的文档
+GET books/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "java编程",
+        "operator": "or"
+      }
+    }
+  }
+}
+
+-- match_phrase的意思是查询的关键词一定要和文档内容顺序一致并且都要出现在字段中，第一个不能返回结果，第二个能返回结果
+GET books/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "思想编程"
+    }
+  }
+}
+
+GET books/_search
+{
+  "query": {
+    "match_phrase": {
+      "title": "编程思想"
+    }
+  }
+}
+
+-- match_phrase_prefix支持前缀匹配，所以下面的语句可以查询出数据
+GET books/_search
+{
+  "query": {
+    "match_phrase_prefix": {
+      "title": "编程思"
+    }
+  }
+}
+
+-- multi_match可以查询出多个字段的匹配的关键词的文档
+GET books/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "java编程",
+      "fields":["title", "description"]
+    }
+  }
+}
+
+-- multi_match通配符
+GET books/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "java编程",
+      "fields":["title", "des*"]
+    }
+  }
+}
+
+-- multi_match指定搜索title字段的权重是description字段的3倍
+GET books/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "java编程",
+      "fields":["title^3", "description"]
+    }
+  }
+}
+
+-- terms查询，查询标题中包含java和python关键词的文档，构造多个词用terms而不是term
+GET books/_search
+{
+  "query": {
+    "terms": {
+      "title": ["java", "python"]
+    }
+  }
+}
+
+-- range查询，查询范围，查询价格大于等于50小于等于70的文档
+GET books/_search
+{
+  "query": {
+    "range": {
+      "price": {
+        "gte": 50,
+        "lte": 70
+      }
+    }
+  }
+}
+
+-- 查询出版时间在2016-01-01到2016-12-31之间的文档
+GET books/_search
+{
+  "query": {
+    "range": {
+      "year": {
+        "gte": "2016-01-01",
+        "lte": "2016-12-31",
+        "format": "yyyy-MM-dd"
+      }
+    }
+  }
+}
+
+-- exists查询返回field指定的字段存在并且不为空值的文档
+GET books/_search
+{
+  "query": {
+    "exists": {
+      "field": "title"
+    }
+  }
+}
+
+-- prefix返回指定字段以某一个关键词开头的文档
+GET books/_search
+{
+  "query": {
+    "prefix": {
+      "description": "让"
+    }
+  }
+}
+
+-- wildcard通配符查询，效率低
+GET books/_search
+{
+  "query": {
+    "wildcard": {
+      "author": "张若*"
+    }
+  }
+}
+
+-- fuzzy查询适合于模糊匹配，效率低
+GET books/_search
+{
+  "query": {
+    "fuzzy": {
+      "title": "javascrtp"
+    }
+  }
+}
+
+-- type查询用于查询整个文档type为某某值的文档
+GET _search
+{
+  "query": {
+    "type":{
+      "value": "IT"
+    }
+  }
+}
+
+-- ids查询用于查询文档中ids的一个列表对应的文档
+GET _search
+{
+  "query": {
+    "ids": {
+      "type":"IT",
+      "values": [1,3,4]
+    }
+  }
+}
+
+-- constant_score返回filter中包含的关键词的文档，并且所有文档评分都相同
+GET books/_search
+{
+  "query": {
+    "constant_score": {
+      "filter": {
+        "term": {
+          "title":"java"
+        }
+      },
+      "boost": 1.2
+    }
+  }
+}
+
+-- bool查询，构造多个简单查询组合在一起，查询title包含java，并且price不高于70，description可以包含也可以不包含虚拟机的文档
+GET books/_search
+{
+  "query": {
+    "bool": {
+      "minimum_should_match": 1,
+      "must": {
+        "match": {
+          "title": "java"
+        }
+      },
+      "should": [
+        {
+          "match": {
+            "description": "虚拟机"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "range": {
+            "price": {
+              "gte": 70
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+-- more_like_this查询
+GET books/_search
+{
+  "query": {
+    "more_like_this": {
+      "fields": [
+        "title", "description"
+      ],
+      "like": "java virtual machine",
+      "min_term_freq": 1,
+      "max_query_terms": 12
+    }
+  }
+}
+
+-- script查询
+GET books/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "script": {
+            "script": {
+              "source": "doc['price'].value > 80",
+              "lang": "painless"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+-- 高亮自定义标签
+GET books/_search
+{
+  "query": {
+    "match": {
+      "title": "javascript"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "title": {
+        "pre_tags": ["<strong>"],
+        "post_tags": ["</strong>"]
+      }
+    }
+  }
+}
+
+-- 多字段高亮，需要把require_field_match设置为false
+GET books/_search
+{
+  "query": {
+    "match": {
+      "title": "javascript"
+    }
+  },
+  "highlight": {
+    "require_field_match": false,
+    "fields": {
+      "title": {
+      },
+      "description": {}
+    }
+  }
+}
+
+-- 按照价格降序排列，价格相等按照出版时间升序排列
+GET books/_search
+{
+  "sort": [
+    {
+      "price": {
+        "order": "desc"
+      },
+      "year": {
+        "order": "asc"
+      }
+    }
+  ]
+}
